@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Exchange Rates Dashboard</title>
+    <!-- Load Google Charts -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+<body>
+    <div class="center-content">
+    <h1>Currency Exchange Rates Dashboard</h1>
+
+    <h2>Top 10 Currencies with Highest Differences</h2>
+    <div id="chart_div" style="width: 100%; height: 750px;"></div>
+    </div>
+
+    <script type="text/javascript">
+        // Load the Google Visualization API and the corechart package.
+        google.charts.load('current', {'packages': ['corechart']});
+    
+        // Set a callback to run when the Google Visualization API is loaded.
+        google.charts.setOnLoadCallback(drawChart);
+    
+        // Function to draw the line chart
+        function drawChart() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Currency');
+            data.addColumn('number', 'Exchange Rate - {{ specific_date_1 }}');
+            data.addColumn('number', 'Exchange Rate - {{ specific_date_2 }}');
+    
+            // Populate data rows from Flask variables
+            {% for currency, rate_1, rate_2 in zipped_data_top %}
+                data.addRow(['{{ currency }}', {{ rate_1 }}, {{ rate_2 }}]);
+            {% endfor %}
+    
+            // Set chart options
+            var options = {
+                title: 'Currency Exchange Rates Comparison (Top 10)',
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                vAxis: {
+                    viewWindow: {
+                        min: -125000,  // Set the minimum y-axis value
+                        max: 125000  // Set the maximum y-axis value
+                    }
+                },
+                hAxis: {
+                    slantedText: true,  // Rotate x-axis labels for better visibility
+                    slantedTextAngle: 45,  // Angle for rotated x-axis labels
+                    maxAlternation: 1,  // Show every label
+                    maxTextLines: 3,  // Maximum number of lines per label
+                    minTextSpacing: 40,  // Minimum space between labels
+                    textStyle: {
+                        fontSize: 10  // Adjust font size of x-axis labels
+                    }
+                }
+            };
+    
+            // Instantiate and draw the chart
+            var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+            chart.draw(data, options);
+        }
+    </script>
+
+<hr>
+
+<!-- ... Other HTML code ... -->
+
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Date');
+        {% for currency_code in currency_codes %}
+            data.addColumn('number', '{{ currency_code | upper }} to CAD');
+        {% endfor %}
+
+        {% for date, *rates in currency_data[currency_codes[0]] %}
+            data.addRow([new Date('{{ date }}'),
+                {% for rate in rates %}
+                    {{ rate | default(0) }},
+                {% endfor %}
+            ]);
+        {% endfor %}
+
+        var options = {
+            title: 'Exchange Rate Fluctuations for the Past 30 Days',
+            legend: { position: 'bottom' }
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div2'));
+        chart.draw(data, options);
+    }
+</script>
+
+<!-- ... Other HTML code ... -->
+
+<div id="chart_div2" style="width: 800px; height: 400px;"></div>
+
+    <hr>
+
+
+    
+
+    <hr>
+
+    <h2>All Currencies (Unsorted)</h2>
+    <div id="table_div" style="width: 50%; height: 400px;"></div>
+    
+    <script type="text/javascript">
+        google.charts.load('current', {'packages': ['table']});
+        google.charts.setOnLoadCallback(drawTable);
+    
+        function drawTable() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Currency');
+            data.addColumn('number', 'Exchange Rate - {{ specific_date_1 }}');
+            data.addColumn('number', 'Exchange Rate - {{ specific_date_2 }}');
+    
+            // Populate data rows from Flask variables
+            {% for currency, rate_1, rate_2 in zipped_data_unsorted %}
+                data.addRow(['{{ currency }}', {{ rate_1 }}, {{ rate_2 }}]);
+            {% endfor %}
+    
+            var table = new google.visualization.Table(document.getElementById('table_div'));
+            table.draw(data, {showRowNumber: true, width: '100%', height: '100%'});
+        }
+        
+    </script>
+
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+    
+        function drawChart() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('date', 'Date');  // Use 'date' data type for x-axis
+            data.addColumn('number', 'Exchange Rate (CAD)');  // Use 'number' data type for y-axis
+    
+            {% for entry in zipped_data_unsorted %}
+                data.addRow([new Date('{{ entry[0] }}'), {{ entry[1] | default(0) }}]);
+            {% endfor %}
+    
+            var options = {
+                title: 'Exchange Rate vs CAD (Unsorted)',
+                curveType: 'function',
+                legend: { position: 'bottom' }
+            };
+    
+            var chart = new google.visualization.LineChart(document.getElementById('chart_div1'));
+            chart.draw(data, options);
+        }
+    </script>
+    <div id="chart_div1" style="width: 800px; height: 400px;"></div>
+
+
+     <hr>
+
+    <h2>APIs</h2>
+
+    <button id="get_all">Display all currency exchange rates with respect to Canada for past 5 months</button>
+    <script>
+        $(document).ready(function() {
+            $('#get_all').click(function() {
+                var newTab = window.open("", "_blank");
+                $.ajax({
+                    url: '/get_all',
+                    type: 'GET',
+                    success: function(response) {
+                        newTab.document.write(response.message);
+                    },
+                    error: function(error) {
+                        console.log(error);
+                        newTab.document.write('Error calling API');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
